@@ -1,0 +1,471 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <title>Door Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css" />
+      <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+      <script type="text/javascript" src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js"></script>
+    <style type="text/css" media="screen">
+      .tagslist { display: table; }
+      .tagsrow { display: table-row; }
+      .tagid, .tagholdername, .tagenabled { display: table-cell; padding-right: 10px; }
+      .eventslist { display: table; }
+      .eventsrow { display: table-row; }
+      .eventscol { display: table-cell; padding-right: 10px; }
+      .status-header { display: inline-block; padding-left:10px; }
+      .door-status { display: inline-block; }
+      .door-status-normal { color: Green; }
+      .door-status-alert { color: Red; }
+      .footer-status { line-height: 0; text-align:center; }
+    </style>
+  </head>
+  <body>
+
+    <!-- Start of main page -->
+    <div data-role="page" id="main-page">
+
+      <div data-role="header">
+        <h1>Door Control</h1>
+        <a data-role="button" href="#settings-page" data-icon="gear" data-iconpos="left" class="ui-btn-right" data-transition="slide">
+          Settings
+        </a>
+      </div>
+      <!-- /header -->
+
+      <h3 id="rfidtagcode"></h3>
+      <a id ="add-rfidtag" href="#add-tag-page" data-role="button" data-icon="plus">Add Tag</a>
+      <a id="main-unlock" href="#" data-role="button" data-icon="check">Unlock Main Door</a>
+      <a id="main-lock" href="#" data-role="button" data-icon="delete">Lock Main Door</a>
+      <a id="inner-unlock" href="#" data-role="button" data-icon="check">Unlock Inner Door</a>
+      <a id="inner-lock" href="#" data-role="button" data-icon="delete">Lock Inner Door</a>
+      
+      <div data-role="footer">
+        <div class="footer-status">
+            <p class="status-header">Main Door</p>
+            <p id="status-main-door-locked" class="door-status"></p>
+            <p id="status-main-door-isopen" class="door-status"></p>
+        </div>
+        <div class="footer-status">
+            <p class="status-header">Inner Door</p>
+            <p id="status-inner-door-locked" class="door-status"></p>
+        </div>
+        <div class="footer-status">
+            <p class="status-header">Bell</p>
+            <p id="status-bell-ring" class="door-status"></p>
+        </div>
+      </div>
+      <!-- /footer -->
+
+    </div>
+    <!-- /page -->
+
+    <!-- Start of settings page -->
+    <div data-role="page" id="settings-page">
+      <div data-theme="a" data-role="header">
+        <h3>
+          Settings
+        </h3>
+        <a data-role="button" href="#main-page" data-icon="arrow-l" data-iconpos="left" class="ui-btn-left" data-transition="slide" data-direction="reverse">Back</a>
+      </div>
+      <div data-role="content">
+        <form id="settings-form">
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="main-door-auto-timeout">
+                Main door timeout (secs)
+              </label>
+              <input name="main-door-auto-timeout" id="main-door-auto-timeout" placeholder="" value="2" type="number"/>
+              </fieldset>
+          </div>
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="main-door-manual-timeout">
+                Main door manual timeout (secs)
+              </label>
+              <input name="main-door-manual-timeout" id="main-door-manual-timeout" placeholder="" value="15" type="number"/>
+              </fieldset>
+          </div>
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="inner-door-auto-timeout">
+                Inner door auto timeout (secs)
+              </label>
+              <input name="inner-door-auto-timeout" id="inner-door-auto-timeout" placeholder="" value="30" type="number"/>
+              </fieldset>
+          </div>
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="inner-door-manual-timeout">
+                Inner door manual timeout (secs)
+              </label>
+              <input name="inner-door-manual-timeout" id="inner-door-manual-timeout" placeholder="" value="30" type="number"/>
+              </fieldset>
+          </div>
+          <input type="submit" value="Ok"/>
+        </form>
+        <a id="list-tags-button" href="#list-tags-page" data-role="button" data-icon="gear">List Tags</a>
+        <a id="list-events-button" href="#list-events-page" data-role="button" data-icon="gear">List Events</a>
+        <a id="list-debug-button" href="#list-debug-page" data-role="button" data-icon="gear">List Debug</a>
+        <a id="test-tag" href="#test-tag-page" data-role="button" data-icon="gear">Test Tag</a>
+
+      </div>
+    </div>
+    <!-- /page -->
+
+    <!-- Start of add-tag page -->
+    <div data-role="page" id="add-tag-page">
+      <div data-theme="a" data-role="header">
+        <h3 class="add-tag-page-header">
+          Add/Edit Tag
+        </h3>
+        <a data-role="button" href="#main-page" data-icon="arrow-l" data-iconpos="left" class="ui-btn-left" data-transition="slide" data-direction="reverse">Cancel</a>
+      </div>
+      <div data-role="content">
+        <form id="add-tag-form">
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="tag-tagid">
+                Tag ID
+              </label>
+              <input name="tag-tagid" id="tag-tagid" placeholder="" type="text"/>
+            </fieldset>
+          </div>
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="tag-holdername">
+                Holder
+              </label>
+              <input name="tag-holdername" id="tag-holdername" placeholder="" type="text"/>
+            </fieldset>
+          </div>
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="tag-enabled">
+                Enabled
+              </label>
+              <input name="tag-enabled" id="tag-enabled" placeholder="" checked="checked" type="checkbox"/>
+            </fieldset>
+          </div>
+          <input type="submit" value="Ok"/>
+        </form>
+      </div>
+    </div>
+    <!-- /page -->
+    
+    <!-- Start of test-tag page -->
+    <div data-role="page" id="test-tag-page">
+      <div data-theme="a" data-role="header">
+        <h3>
+          Test Tag
+        </h3>
+        <a data-role="button" href="#main-page" data-icon="arrow-l" data-iconpos="left" class="ui-btn-left" data-transition="slide" data-direction="reverse">Cancel</a>
+      </div>
+      <div data-role="content">
+        <form id="test-tag-form">
+          <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup">
+              <label for="tag-tagid">
+                Tag ID
+              </label>
+              <input name="tag-tagid" id="tag-tagid" placeholder="" type="text"/>
+            </fieldset>
+          </div>
+          <input type="submit" value="Ok"/>
+        </form>
+        <div id="test-return">
+          Test Result
+        </div>
+      </div>
+    </div>
+    <!-- /page -->
+
+    <!-- Start of list tags page -->
+    <div data-role="page" id="list-tags-page">
+      <div data-theme="a" data-role="header">
+        <h3>
+          Tags
+        </h3>
+        <a data-role="button" href="#main-page" data-icon="arrow-l" data-iconpos="left" class="ui-btn-left" data-transition="slide" data-direction="reverse">Back</a>
+      </div>
+      <div data-role="content">
+        <div id="list-of-tags">
+          No Tags
+        </div>
+      </div>
+    </div>
+    <!-- /page -->
+
+    <!-- Start of list events page -->
+    <div data-role="page" id="list-events-page">
+      <div data-theme="a" data-role="header">
+        <h3>
+          Tags
+        </h3>
+        <a data-role="button" href="#main-page" data-icon="arrow-l" data-iconpos="left" class="ui-btn-left" data-transition="slide" data-direction="reverse">Back</a>
+      </div>
+      <div data-role="content">
+        <div id="list-of-events">
+          No Events
+        </div>
+      </div>
+    </div>
+    <!-- /page -->
+
+    <!-- Start of list debug page -->
+    <div data-role="page" id="list-debug-page">
+      <div data-theme="a" data-role="header">
+        <h3>
+          Tags
+        </h3>
+        <a data-role="button" href="#main-page" data-icon="arrow-l" data-iconpos="left" class="ui-btn-left" data-transition="slide" data-direction="reverse">Back</a>
+      </div>
+      <div data-role="content">
+        <div id="list-of-debug">
+          No Debug
+        </div>
+      </div>
+    </div>
+    <!-- /page -->
+
+    <script type="text/javascript">
+      function update()
+      {
+        var ajaxreq = $.ajax({url: '/status', type: 'GET', dataType: 'html'});
+        ajaxreq.done(function(retValue)
+        {
+          var statVals = $.trim(retValue).split(",");
+          $("#status-main-door-locked").html(statVals[2])
+          $("#status-main-door-isopen").html(statVals[3])
+          $("#status-inner-door-locked").html(statVals[4])
+          $("#status-bell-ring").html(statVals[5])
+          if (statVals[1] == "NoTagPresent")
+          {
+            $("#rfidtagcode").hide();
+          }
+          else
+          {
+            $("#rfidtagcode").html(statVals[1] + " tag: " + statVals[0]);
+            $("#rfidtagcode").show();
+          }
+          if (statVals[1] == "Unknown")
+          {
+            $("#add-rfidtag").show();
+            // Set the field on the add and test pages to the current tag - but only if those pages aren't active otherwise any changes
+            // will constantly be overwritten by status updates
+            if (($.mobile.activePage.attr("id") != "test-tag-page") && ($.mobile.activePage.attr("id") != "add-tag-page"))
+                $("#tag-tagid").val(statVals[0]);
+          }
+          else
+          {
+            $("#add-rfidtag").hide();
+          }
+          
+          // Main Door Buttons and status
+          //$("#main-status").html("Main Door is " + statVals[2].toUpperCase());
+          if (statVals[2].charAt(0) == "L")
+          {
+            $("#main-lock").hide();
+            $("#main-unlock").show();
+            $("#status-main-door-locked").removeClass("door-status-alert");
+            $("#status-main-door-locked").addClass("door-status-normal");
+          }
+          else
+          {
+            $("#main-unlock").hide();
+            $("#main-lock").show();
+            $("#status-main-door-locked").removeClass("door-status-normal");
+            $("#status-main-door-locked").addClass("door-status-alert");
+          }
+
+          // Main Door open status
+          if (statVals[3].charAt(0) == "C")
+          {
+            $("#status-main-door-isopen").removeClass("door-status-alert");
+            $("#status-main-door-isopen").addClass("door-status-normal");
+          }
+          else
+          {
+            $("#status-main-door-isopen").removeClass("door-status-normal");
+            $("#status-main-door-isopen").addClass("door-status-alert");
+          }
+          
+          // Inner Door Buttons and status
+          //$("#inner-status").html("Inner Door is " + statVals[4].toUpperCase());
+          if (statVals[4].charAt(0) == "L")
+          {
+            $("#inner-lock").hide();
+            $("#inner-unlock").show();
+            $("#status-inner-door-locked").removeClass("door-status-alert");
+            $("#status-inner-door-locked").addClass("door-status-normal");
+          }
+          else
+          {
+            $("#inner-unlock").hide();
+            $("#inner-lock").show();
+            $("#status-inner-door-locked").removeClass("door-status-normal");
+            $("#status-inner-door-locked").addClass("door-status-alert");
+          }
+
+          // Bell ring status
+          if (statVals[5].charAt(0) == "N")
+          {
+            $("#status-bell-ring").removeClass("door-status-alert");
+            $("#status-bell-ring").addClass("door-status-normal");
+          }
+          else
+          {
+            $("#status-bell-ring").removeClass("door-status-normal");
+            $("#status-bell-ring").addClass("door-status-alert");
+          }
+          
+          // Timeout so status requested again
+          window.setTimeout(update, 500);
+        });
+      }
+
+      function fillForm(dataVals)
+      {
+        var args = dataVals.split('&');
+        $.each(args, function(idx, val)
+        {
+          var namVal = val.split('=');
+          $('#'+namVal[0]).val(namVal[1]);
+        });
+      }
+
+      $(function () {
+
+        // Swipe from page to page
+        $('#main-page').bind('swipeleft', function(e) {$.mobile.changePage("#settings-page", { transition: "slide"});event.preventDefault();})
+        $('#settings-page').bind('swiperight', function(e) {$.mobile.changePage("#main-page", { transition: "slide", reverse: true });event.preventDefault();})
+
+        // Lock/unlock click functions
+        $("#main-unlock").click(function()
+        {
+          var ajaxcmd = $.ajax({url: '/main-unlock', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue) {});
+        });
+        
+        $("#main-lock").click(function()
+        {
+          var ajaxcmd = $.ajax({url: '/main-lock', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue) {});
+        });
+
+        $("#inner-unlock").click(function() 
+        {
+          var ajaxcmd = $.ajax({url: '/inner-unlock', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue) {});
+        });
+      
+        $("#inner-lock").click(function()
+        {
+          var ajaxcmd = $.ajax({url: '/inner-lock', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue) {});
+        });
+
+        $("#test-key").click(function()
+        {
+          var ajaxcmd = $.ajax({url: '/test-key', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue) {});
+        });
+
+        $(".tagsrow").live('click', function()
+        {
+          var $this = $(this);
+          $("#tag-tagid").val($this.find('.tagid')[0].innerHTML);
+          $("#tag-holdername").val($this.find('.tagholdername')[0].innerHTML);
+          $("#tag-enabled").val($this.find('.tagenabled')[0].innerHTML);
+          $.mobile.changePage("#add-tag-page");
+        });
+
+        $('#settings-form').submit(function (e)
+        {
+          // cache the form element for use in this function
+          var $this = $(this);
+          // prevent the default submission of the form
+          e.preventDefault();
+          var ser = $this.serialize();
+          var ajaxcmd = $.ajax({url: '/submit-settings/' + ser, type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue)
+          {
+            $.mobile.changePage("#main-page");
+          });
+          return false;
+        });
+
+        $("#settings-page").live('pageshow', function(event, ui)
+        {
+          var ajaxcmd = $.ajax({url: '/get-settings', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue)
+          {
+            fillForm(retValue); 
+          });
+        });
+
+        $('#add-tag-form').submit(function (e)
+        {
+          // cache the form element for use in this function
+          var $this = $(this);
+          // prevent the default submission of the form
+          e.preventDefault();
+          var ser = $this.serialize();
+          var ajaxcmd = $.ajax({url: '/addtag/' + ser, type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue)
+          {
+            $.mobile.changePage("#main-page");
+          });
+          return false;
+        });
+
+        $('#test-tag-form').submit(function (e)
+        {
+          // cache the form element for use in this function
+          var $this = $(this);
+          // prevent the default submission of the form
+          e.preventDefault();
+          var ser = $this.serialize();
+          var ajaxcmd = $.ajax({url: '/testtag/' + ser, type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue)
+          {
+            $("#test-result").html(retValue);
+            $.mobile.changePage("#main-page");
+          });
+          return false;
+        });
+
+        $("#list-tags-page").live('pageshow', function(event, ui)
+        {
+          var ajaxcmd = $.ajax({url: '/get-tags', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue)
+          {
+            $("#list-of-tags").html(retValue);
+          });
+        });
+
+        $("#list-events-page").live('pageshow', function(event, ui)
+        {
+          var ajaxcmd = $.ajax({url: '/get-events', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue)
+          {
+            $("#list-of-events").html(retValue);
+          });
+        });
+
+        $("#list-debug-page").live('pageshow', function(event, ui)
+        {
+          var ajaxcmd = $.ajax({url: '/get-debug', type: 'GET', dataType: 'html'});
+          ajaxcmd.done(function(retValue)
+          {
+            $("#list-of-debug").html(retValue);
+          });
+        });
+
+        // Call the update function to initiate regular updates
+        update();
+      });
+
+    </script>
+  </body>
+</html>

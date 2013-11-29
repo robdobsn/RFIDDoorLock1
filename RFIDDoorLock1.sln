@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C# Express 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFIDDoorLock1", "RFIDDoorLock1\RFIDDoorLock1.csproj", "{AACA8893-8D2C-44A9-BEE6-5AAA684E87B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blinq.Netduino", "RFIDDoorLock1\Blinq.Netduino\Blinq.Netduino.csproj", "{F444D76A-7C89-4AD5-B7B6-1B8293A0DC13}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AACA8893-8D2C-44A9-BEE6-5AAA684E87B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AACA8893-8D2C-44A9-BEE6-5AAA684E87B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AACA8893-8D2C-44A9-BEE6-5AAA684E87B7}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{AACA8893-8D2C-44A9-BEE6-5AAA684E87B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AACA8893-8D2C-44A9-BEE6-5AAA684E87B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AACA8893-8D2C-44A9-BEE6-5AAA684E87B7}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{F444D76A-7C89-4AD5-B7B6-1B8293A0DC13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F444D76A-7C89-4AD5-B7B6-1B8293A0DC13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F444D76A-7C89-4AD5-B7B6-1B8293A0DC13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F444D76A-7C89-4AD5-B7B6-1B8293A0DC13}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

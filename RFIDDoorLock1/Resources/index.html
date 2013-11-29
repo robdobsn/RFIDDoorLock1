@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html> 
+<html> 
+  <head>
+  <title>Door Control</title> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <script type="text/javascript">
+    function doAjx(url, cb)
+    {
+      var x;
+      // code for IE7+, Firefox, Chrome, Opera, Safari
+      x = new XMLHttpRequest();
+      x.onreadystatechange = function() 
+      {
+        if (x.readyState == 4 && x.status == 200)
+        {
+          cb(x.responseText);
+        }
+      }
+      x.open("GET", url, true);
+      x.send();
+    }
+    function statusCb(rStr)
+    {
+      var statVals = rStr.split(",");
+      var el = document.getElementById("status-main-door-locked");
+      el.innerHTML = statVals[2];
+      var el = document.getElementById("status-main-door-isopen");
+      el.innerHTML = statVals[3];
+      var el = document.getElementById("status-inner-door-locked");
+      el.innerHTML = statVals[4];
+      var el = document.getElementById("status-bell-ring");
+      el.innerHTML = statVals[5];
+
+      // Handle tag adding
+      var el = document.getElementById("add-rfidtag");
+      if (statVals[1] == "Unknown")
+      {
+      el.style.display = "block";
+      }
+      else
+      {
+      el.style.display = "none";
+      }
+
+      // Handle main button enables
+      var el = document.getElementById("main-lock")
+      el.style.display = (statVals[2].charAt(0) == "L") ? "none" : "table-cell";
+      var el = document.getElementById("main-unlock")
+      el.style.display = (statVals[2].charAt(0) == "L") ? "table-cell" : "none";
+
+      // Handle inner button enables
+      var el = document.getElementById("inner-lock")
+      el.style.display = (statVals[4].charAt(0) == "L") ? "none" : "table-cell";
+      var el = document.getElementById("inner-unlock")
+      el.style.display = (statVals[4].charAt(0) == "L") ? "table-cell" : "none";
+
+    }
+    window.onload=function()
+    {
+      updateStatus();
+    }
+    function updateStatus()
+    {
+      doAjx('/status',statusCb);
+      window.setTimeout(updateStatus, 500);
+//TEST      statusCb("12345,Known,Locked,Open,Unlocked,Ring");
+    }
+  </script>
+  <style>
+    body {
+      font-family: Helvetica;
+      line-height: 1.4em;
+      font-size:12pt; 
+      }
+    .layout { display:table; width: 100%; margin:0; }
+    .pg-hd, .pg-ft { background-color: #00344c; display: block; }
+    .hd-txt, .ft-txt { padding: 10px; color: #e0e0e0; vertical-align: middle; text-align:center; }
+    .hd-com
+    {
+      float: right;
+      height:0;
+    }
+    .hd-ico
+    {
+      position: relative;
+      top: -73px;
+      left: -10px;
+      background-color: #626072;
+      -moz-border-radius: 15px;
+      -webkit-border-radius: 15px;
+      padding: 3px;
+      font-weight: bold;
+    }
+    .hd-com a
+    {
+      padding: 10px;
+      color: #e0e0e0;
+      text-decoration: none;
+      text-align:center;
+    }
+    .lk-hd
+    {
+      color: #fff;
+      background-color: #8898aB !important;
+      display: table-cell;
+      width: 20%;
+      border-bottom: 1px solid #666;
+      text-align:center;
+      vertical-align: middle;
+      border-right: 1px solid #666;
+    }
+    .lk-hd:last-child {
+      border-right: none !important;
+    }
+    .lk-2x {
+      color: #315D96;
+      background-color: #e6ebf0 !important;
+      display: table-cell;
+      width: 50%;
+      border-bottom: 1px solid #666;
+      text-align:center;
+      vertical-align: middle;
+      border-right: 1px solid #666;
+    }
+    .lk-2x-last 
+    {
+      border-right: none !important;
+    }
+    .lk-2x a
+    {
+      color: #315D96;
+      font-weight: bold;
+      display: block;
+      vertical-align: middle;
+      text-decoration:none;
+      padding: 25px 0 25px 0;
+      font-size: 150%;
+    }
+    .door-status {
+      display: inline;
+      color: yellow;
+      font-size: 130%;
+    }
+    .status-hd {
+      display: inline;
+      color: light-grey;
+      padding-left: 15px;
+      padding-right: 3px;
+      font-size: 130%;
+    }
+  </style>
+</head> 
+<body> 
+<div>
+  <div class="layout">
+    <div class="pg-hd">
+      <div class="hd-txt"><h1>Door Control</h1></div>
+      <div class="hd-com"><div class="hd-ico"><a href="setup.html">Setup</a></div></div>
+    </div>
+	</div><!-- /header -->
+
+  <div class="layout">
+    <div class="lk-2x lk-2x-last" id="add-rfidtag" style="display: none">
+      <a href="setup.html#add-tag-page">Add Tag</a>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="lk-2x" id="main-unlock">
+      <a href="#" onclick="doAjx('/main-unlock',statusCb)">Unlock Main Door</a>
+    </div>
+    <div class="lk-2x" id="main-lock" style="display: none">
+      <a href="#" onclick="doAjx('/main-lock',statusCb)">Lock Main Door</a>
+    </div>
+    <div class="lk-2x lk-2x-last" id="inner-unlock">
+      <a href="#" onclick="doAjx('/inner-unlock',statusCb)">Unlock Inner Door</a>
+    </div>
+    <div class="lk-2x lk-2x-last" id="inner-lock" style="display: none">
+      <a href="#" onclick="doAjx('/inner-lock',statusCb)">Lock Inner Door</a>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="pg-ft">
+      <div class="ft-txt">
+        <p class="status-hd">Main: </p>
+        <p id="status-main-door-locked" class="door-status"></p>
+        <p id="status-main-door-isopen" class="door-status"></p>
+        <p class="status-hd">Inner:</p>
+        <p id="status-inner-door-locked" class="door-status"></p>
+        <p class="status-hd">Bell:</p>
+        <p id="status-bell-ring" class="door-status"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
