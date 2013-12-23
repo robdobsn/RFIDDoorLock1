@@ -26,12 +26,17 @@ namespace RFIDDoorLock1
         static string testTagId = "";
         static TimeSpan timeoutOnRfidCheckLoop = new TimeSpan(0, 0, 0, 0, 250);
         static TimeSpan timeoutOnTest = new TimeSpan(0, 0, 20);
-        static DateTime doorBellLastRing = DateTime.MinValue;
-        static TimeSpan DOOR_BELL_TIMEOUT_TS = new TimeSpan(0,0,5);
+        static DateTime lastStatusBroadcastTime = DateTime.MinValue;
+        static TimeSpan STATUS_BROADCAST_TIMEOUT = new TimeSpan(0,0,1);
         static OutputPort onboardLed;
         static int onboardLedCount = 0;
         static int onboardLedRate = 250;
+        static DateTime timeOfLastWebCommandRx = DateTime.Now;
+        static TimeSpan timeoutOnWebCommandRx = new TimeSpan(0, 10, 0);
         static OutputPort watchdog;
+        static DoorStrike.DoorOpenSense mainDoorLastOpenState = DoorStrike.DoorOpenSense.Unknown;
+        static bool mainDoorLastLockState = true;
+        static bool innerDoorLastLockState = true;
 
         public static void Main()
         {
@@ -100,10 +105,14 @@ namespace RFIDDoorLock1
                     onboardLed.Write(!onboardLed.Read());
                 }
 
-                // Pulse watchdog to keep alive
-                watchdog.Write(true);
-                Thread.Sleep(1);
-                watchdog.Write(false);
+                // Pulse watchdog to keep alive - but only if a web command received recently
+                // otherwise allow the watchdog to reset the device
+                if (DateTime.Now < timeOfLastWebCommandRx + timeoutOnWebCommandRx)
+                {
+                    watchdog.Write(true);
+                    Thread.Sleep(1);
+                    watchdog.Write(false);
+                }
 
                 // Service the rfid reader - this allows it to get characters and interpret them
                 rfidReader.Service();
@@ -112,18 +121,8 @@ namespace RFIDDoorLock1
                 mainDoorStrike.Service();
                 innerDoorStrike.Service();
 
-                // Check for doorbell ring
-                if (tapDecoder.IsTapperPressed())
-                {
-                    // Check we don't broadcast constantly
-                    if ((DateTime.Now > doorBellLastRing + DOOR_BELL_TIMEOUT_TS))
-                    {
-                        BroadcastBellRing.Send();
-                        doorBellLastRing = DateTime.Now;
-                    }
-                }
-
                 // Check if there is a tag present
+                bool tagPresentStatus = false;
                 if (DateTime.Now > rfidCheckLoopTimer + timeoutOnRfidCheckLoop)
                 {
                     String tagId = rfidReader.GetRFIDTagId();
@@ -144,6 +143,7 @@ namespace RFIDDoorLock1
                     // Door strike action
                     if (tagId.Length > 0)
                     {
+                        tagPresentStatus = true;
                         string holderName = "";
                         bool isEnabled = false;
                         if (rfidTagDb.IsTagKnown(tagId, out holderName, out isEnabled))
@@ -161,6 +161,24 @@ namespace RFIDDoorLock1
                         //Debug.Print(tagID);
                     }
                     rfidCheckLoopTimer = DateTime.Now;
+                }
+
+                // Check for state changes and broadcast status message if so
+                bool stateChange = tagPresentStatus || tapDecoder.IsTapperPressed();
+                stateChange |= (mainDoorLastLockState != mainDoorStrike.IsLocked());
+                stateChange |= (innerDoorLastLockState != mainDoorStrike.IsLocked());
+                stateChange |= (mainDoorLastOpenState != mainDoorStrike.IsOpen());
+                if (stateChange)
+                {
+                    // Check we don't broadcast constantly
+                    if ((DateTime.Now > lastStatusBroadcastTime + STATUS_BROADCAST_TIMEOUT))
+                    {
+                        BroadcastStatus.Send(GetStatusString());
+                        lastStatusBroadcastTime = DateTime.Now;
+                        mainDoorLastLockState = mainDoorStrike.IsLocked();
+                        innerDoorLastLockState = mainDoorStrike.IsLocked();
+                        mainDoorLastOpenState = mainDoorStrike.IsOpen();
+                    }
                 }
 
                 // The following code attempts to emulate the "tap-lock" that I previously
@@ -191,6 +209,36 @@ namespace RFIDDoorLock1
 
         }
 
+        private static string GetStatusString()
+        {
+            string tagId = rfidReader.GetRFIDTagId().Trim();
+            // Test inject tag id
+            if (tagId.Length == 0)
+                if (testTagId.Length > 0)
+                    tagId = testTagId;
+            string holderName = "";
+            bool isEnabled = false;
+            bool tagKnown = rfidTagDb.IsTagKnown(tagId, out holderName, out isEnabled);
+            //               e.ReturnString = "<html><body>";
+            string mainDoorOpenStr = "Unknown";
+            switch (mainDoorStrike.IsOpen())
+            {
+                case DoorStrike.DoorOpenSense.Open:
+                    mainDoorOpenStr = "Open";
+                    break;
+                case DoorStrike.DoorOpenSense.Closed:
+                    mainDoorOpenStr = "Closed";
+                    break;
+            }
+            string statusString = tagId;
+            statusString += "," + (tagId == "" ? "NoTagPresent" : tagKnown ? ((holderName == "" ? "Known" : holderName) + " " + (isEnabled ? "" : "(DISABLED)")) : "Unknown");
+            statusString += "," + (mainDoorStrike.IsLocked() ? "Locked" : "Unlocked");
+            statusString += "," + mainDoorOpenStr;
+            statusString += "," + (innerDoorStrike.IsLocked() ? "Locked" : "Unlocked");
+            statusString += "," + (tapDecoder.IsTapperPressed() ? "Ring" : "No");
+            return statusString;
+        }
+
         /// <summary>
         /// Handles the CommandReceived event.
         /// </summary>
@@ -199,6 +247,7 @@ namespace RFIDDoorLock1
 
             try
             {
+                timeOfLastWebCommandRx = DateTime.Now;
 
                 if (e.Command.CommandString != "status")
                     Debug.Print("Command received:" + e.Command.CommandString);
@@ -275,42 +324,21 @@ namespace RFIDDoorLock1
                 {
                     e.ReturnString = eventLogger.ToWebHTML(20, false);
                 }
-                if (e.ReturnString == null || e.ReturnString == "")
-                {
-                    e.ReturnString = "<html><body></body></html>";
-                }
+
+                if (e.ReturnString == null)
+                    e.ReturnString = "";
 
                 // Handle commands that require status to be returned
                 if (bReturnStatus)
                 {
-                    string tagId = rfidReader.GetRFIDTagId().Trim();
-                    // Test inject tag id
-                    if (tagId.Length == 0)
-                        if (testTagId.Length > 0)
-                            tagId = testTagId;
-                    string holderName = "";
-                    bool isEnabled = false;
-                    bool tagKnown = rfidTagDb.IsTagKnown(tagId, out holderName, out isEnabled);
-                    //               e.ReturnString = "<html><body>";
-                    string mainDoorOpenStr = "Unknown";
-                    switch (mainDoorStrike.IsOpen())
-                    {
-                        case DoorStrike.DoorOpenSense.Open:
-                            mainDoorOpenStr = "Open";
-                            break;
-                        case DoorStrike.DoorOpenSense.Closed:
-                            mainDoorOpenStr = "Closed";
-                            break;
-                    }
-                    e.ReturnString += tagId;
-                    e.ReturnString += "," + (tagId == "" ? "NoTagPresent" : tagKnown ? ((holderName == "" ? "Known" : holderName) + " " + (isEnabled ? "" : "(DISABLED)")) : "Unknown");
-                    e.ReturnString += "," + (mainDoorStrike.IsLocked() ? "Locked" : "Unlocked");
-                    e.ReturnString += "," + mainDoorOpenStr;
-                    e.ReturnString += "," + (innerDoorStrike.IsLocked() ? "Locked" : "Unlocked");
-                    e.ReturnString += "," + (tapDecoder.IsTapperPressed() ? "Ring" : "No");
-
-                    //              e.ReturnString += "</body></html>";
+                    e.ReturnString += GetStatusString();
                 }
+
+                if (e.ReturnString == "")
+                {
+                    e.ReturnString = "<html><body></body></html>";
+                }
+
             }
             catch (Exception excp)
             {

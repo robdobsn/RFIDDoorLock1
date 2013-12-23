@@ -31,7 +31,7 @@
   </PropertyGroup>
   <Import Project="$(NetMfTargetsBaseDir)$(TargetFrameworkVersion)\CSharp.Targets" />
   <ItemGroup>
-    <Compile Include="BroadcastBellRing.cs" />
+    <Compile Include="BroadcastStatus.cs" />
     <Compile Include="DateTimeSetter.cs" />
     <Compile Include="DoorStrike.cs" />
     <Compile Include="EventLogger.cs" />

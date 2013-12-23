@@ -9,25 +9,25 @@ using System.Text;
 
 namespace RFIDDoorLock1
 {
-    class BroadcastBellRing
+    class BroadcastStatus
     {
         const int ROB_BROADCAST_PORT = 34343;
         static IPAddress broadcast_ipaddress = IPAddress.Parse("255.255.255.255");
 
-        public static void Send()
+        public static void Send(string statusString)
         {
             try
             {
                 Socket broadsock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 IPEndPoint ip = new IPEndPoint(broadcast_ipaddress, ROB_BROADCAST_PORT);
-                byte[] bytes = StringToByte("Door Bell");
+                byte[] bytes = StringToByte(statusString);
                 broadsock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
                 broadsock.SendTo(bytes, ip);
                 broadsock.Close();
             }
             catch(Exception excp)
             {
-                Debug.Print("Exception in BroadcastBellRing::Send " + excp.Message);
+                Debug.Print("Exception in BroadcastStatus::Send " + excp.Message);
             }
         }
 
